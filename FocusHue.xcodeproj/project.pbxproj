@@ -8,6 +8,7 @@
 
 /* Begin PBXFileReference section */
 		904346252F0E289F00A614EE /* FocusHue.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FocusHue.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		904346402F0E300000A614EE /* MediaAccessibility.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaAccessibility.framework; path = System/Library/Frameworks/MediaAccessibility.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -23,10 +24,15 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				904346412F0E300000A614EE /* MediaAccessibility.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXBuildFile section */
+		904346412F0E300000A614EE /* MediaAccessibility.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 904346402F0E300000A614EE /* MediaAccessibility.framework */; };
+/* End PBXBuildFile section */
 
 /* Begin PBXGroup section */
 		9043461C2F0E289F00A614EE = {
@@ -34,7 +40,16 @@
 			children = (
 				904346272F0E289F00A614EE /* FocusHue */,
 				904346262F0E289F00A614EE /* Products */,
+				904346422F0E300000A614EE /* Frameworks */,
 			);
+			sourceTree = "<group>";
+		};
+		904346422F0E300000A614EE /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				904346402F0E300000A614EE /* MediaAccessibility.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 		904346262F0E289F00A614EE /* Products */ = {
@@ -265,9 +280,11 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = "-lUniversalAccess";
 				PRODUCT_BUNDLE_IDENTIFIER = jio.osephhartono.FocusHue.FocusHue;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "FocusHue/Core/Bridge.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -294,9 +311,11 @@
 				);
 				MACOSX_DEPLOYMENT_TARGET = 14.6;
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = "-lUniversalAccess";
 				PRODUCT_BUNDLE_IDENTIFIER = jio.osephhartono.FocusHue.FocusHue;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "FocusHue/Core/Bridge.h";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
