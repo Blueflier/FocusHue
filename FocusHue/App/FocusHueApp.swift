@@ -22,6 +22,8 @@ struct FocusHueApp: App {
                 .environment(appState.permissionManager)
                 .environment(appState.displayController)
                 .environment(appState.appMonitor)
+                .environment(appState.hotkeyManager)
+                .environment(appState.launchAtLoginManager)
         } label: {
             Image(systemName: menuBarIcon)
         }
@@ -57,6 +59,8 @@ final class AppState {
     let permissionManager: PermissionManager
     let displayController: DisplayController
     let appMonitor: AppMonitor
+    let hotkeyManager: HotkeyManager
+    let launchAtLoginManager: LaunchAtLoginManager
     
     var isEnabled: Bool = true {
         didSet {
@@ -74,9 +78,27 @@ final class AppState {
         self.permissionManager = PermissionManager()
         self.displayController = DisplayController(settingsManager: settingsManager)
         self.appMonitor = AppMonitor(settingsManager: settingsManager)
+        self.hotkeyManager = HotkeyManager()
+        self.launchAtLoginManager = LaunchAtLoginManager()
+        
+        // Setup hotkey callback to toggle grayscale
+        setupHotkeyCallback()
         
         // Start observing distraction changes immediately
         startObserving()
+    }
+    
+    private func setupHotkeyCallback() {
+        hotkeyManager.onHotkeyPressed = { [weak self] in
+            guard let self = self else { return }
+            
+            // Toggle grayscale state
+            if self.displayController.isGrayscaleEnabled || self.displayController.isTransitioning {
+                self.displayController.reset()
+            } else {
+                self.displayController.enableGrayscale()
+            }
+        }
     }
     
     private func startObserving() {
