@@ -12,7 +12,7 @@ Traditional productivity tools often fail because they treat focus like a physic
 
 ### Option 1: The Standard Way (DMG)
 
-1. Navigate to the [Releases](https://www.google.com/search?q=%23) tab of this repository.
+1. Navigate to the [Releases](https://github.com/Blueflier/FocusHue/releases/) tab of this repository.
 2. Download the latest `FocusHue.dmg` file.
 3. Open the DMG and **drag FocusHue to your Applications folder**.
 4. **Right-click** the app in your Applications folder and select **Open** to bypass the initial macOS security verification.
