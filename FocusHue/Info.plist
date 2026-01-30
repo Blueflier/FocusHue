@@ -4,9 +4,9 @@
 <dict>
 	<key>LSUIElement</key>
 	<true/>
-	<key>NSAppleEventsUsageDescription</key>
-	<string>FocusHue needs to access browser information to detect distracting websites.</string>
 	<key>NSAppleScriptEnabled</key>
 	<true/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>This app needs to access the current URL to save it to your library.</string>
 </dict>
 </plist>

@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		904346412F0E300000A614EE /* MediaAccessibility.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 904346402F0E300000A614EE /* MediaAccessibility.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		904346252F0E289F00A614EE /* FocusHue.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FocusHue.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		904346402F0E300000A614EE /* MediaAccessibility.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaAccessibility.framework; path = System/Library/Frameworks/MediaAccessibility.framework; sourceTree = SDKROOT; };
@@ -30,10 +34,6 @@
 		};
 /* End PBXFrameworksBuildPhase section */
 
-/* Begin PBXBuildFile section */
-		904346412F0E300000A614EE /* MediaAccessibility.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 904346402F0E300000A614EE /* MediaAccessibility.framework */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXGroup section */
 		9043461C2F0E289F00A614EE = {
 			isa = PBXGroup;
@@ -44,20 +44,20 @@
 			);
 			sourceTree = "<group>";
 		};
-		904346422F0E300000A614EE /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				904346402F0E300000A614EE /* MediaAccessibility.framework */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
 		904346262F0E289F00A614EE /* Products */ = {
 			isa = PBXGroup;
 			children = (
 				904346252F0E289F00A614EE /* FocusHue.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		904346422F0E300000A614EE /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				904346402F0E300000A614EE /* MediaAccessibility.framework */,
+			);
+			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -173,6 +173,7 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_ENTITLEMENTS = FocusHue/FocusHue.entitlements;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
@@ -236,6 +237,7 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				CODE_SIGN_ENTITLEMENTS = FocusHue/FocusHue.entitlements;
 				COPY_PHASE_STRIP = NO;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
@@ -273,6 +275,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "FocusHue needs to control Chrome to track your productivity.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -284,7 +287,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = jio.osephhartono.FocusHue.FocusHue;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "FocusHue/Core/Bridge.h";
+				SWIFT_OBJC_BRIDGING_HEADER = FocusHue/Core/Bridge.h;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
@@ -304,6 +307,7 @@
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_LSUIElement = YES;
+				INFOPLIST_KEY_NSAppleEventsUsageDescription = "FocusHue needs to control Chrome to track your productivity.";
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -315,7 +319,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = jio.osephhartono.FocusHue.FocusHue;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "FocusHue/Core/Bridge.h";
+				SWIFT_OBJC_BRIDGING_HEADER = FocusHue/Core/Bridge.h;
 				SWIFT_VERSION = 5.0;
 			};
 			name = Release;
