@@ -12,18 +12,17 @@ import Combine
 struct FocusHueApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    @State private var permissionManager = PermissionManager()
-    @State private var displayController = DisplayController()
-    @State private var appMonitor = AppMonitor()
+    @State private var appState = AppState()
     @State private var isEnabled = true
 
     var body: some Scene {
         // Menu bar icon with rich SwiftUI content
         MenuBarExtra {
             MenuBarView(isEnabled: $isEnabled)
-                .environment(permissionManager)
-                .environment(displayController)
-                .environment(appMonitor)
+                .environment(appState.settingsManager)
+                .environment(appState.permissionManager)
+                .environment(appState.displayController)
+                .environment(appState.appMonitor)
         } label: {
             Image(systemName: menuBarIcon)
         }
@@ -32,22 +31,40 @@ struct FocusHueApp: App {
         // Onboarding window (shows on first launch)
         Window("Welcome to FocusHue", id: "onboarding") {
             OnboardingView()
-                .environment(permissionManager)
+                .environment(appState.permissionManager)
         }
         .windowResizability(.contentSize)
         .defaultPosition(.center)
     }
 
     private var menuBarIcon: String {
-        if displayController.isGrayscaleEnabled {
+        if appState.displayController.isGrayscaleEnabled {
             return "eye.circle.fill"
-        } else if displayController.isTransitioning {
+        } else if appState.displayController.isTransitioning {
             return "eye.trianglebadge.exclamationmark"
-        } else if appMonitor.isOnDistractingSite && isEnabled {
+        } else if appState.appMonitor.isOnDistractingSite && isEnabled {
             return "exclamationmark.triangle"
         } else {
             return "eye.circle"
         }
+    }
+}
+
+// MARK: - App State Container
+/// Holds all app state objects with proper initialization order
+@Observable
+final class AppState {
+    let settingsManager: SettingsManager
+    let permissionManager: PermissionManager
+    let displayController: DisplayController
+    let appMonitor: AppMonitor
+    
+    init() {
+        // Initialize settings first since other managers depend on it
+        self.settingsManager = SettingsManager()
+        self.permissionManager = PermissionManager()
+        self.displayController = DisplayController(settingsManager: settingsManager)
+        self.appMonitor = AppMonitor(settingsManager: settingsManager)
     }
 }
 

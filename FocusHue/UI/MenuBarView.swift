@@ -9,9 +9,12 @@ import SwiftUI
 
 struct MenuBarView: View {
     @Binding var isEnabled: Bool
+    @Environment(SettingsManager.self) private var settingsManager
     @Environment(PermissionManager.self) private var permissionManager
     @Environment(DisplayController.self) private var displayController
     @Environment(AppMonitor.self) private var appMonitor
+    
+    @State private var showingSettings = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -133,7 +136,7 @@ struct MenuBarView: View {
     }
 
     private var remainingSeconds: Int {
-        let remaining = (1.0 - displayController.transitionProgress) * 15.0
+        let remaining = (1.0 - displayController.transitionProgress) * settingsManager.activationDelay
         return max(0, Int(remaining.rounded()))
     }
 
@@ -148,6 +151,19 @@ struct MenuBarView: View {
                 displayController.testGrayscale(duration: 5.0)
             }
             .disabled(!permissionManager.hasAccessibilityPermission)
+            
+            Button {
+                showingSettings = true
+            } label: {
+                HStack {
+                    Image(systemName: "gear")
+                    Text("Settings")
+                }
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
+                    .environment(settingsManager)
+            }
 
             if !permissionManager.hasAccessibilityPermission {
                 Button("Grant Accessibility Permission") {
