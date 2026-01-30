@@ -2,39 +2,36 @@
 //  SettingsView.swift
 //  FocusHue
 //
-//  Settings panel for configuring distraction domains and activation delay
+//  Settings panel for configuring distraction domains, activation delay, hotkey, and launch at login
 //
 
 import SwiftUI
+import Carbon
+import AppKit
 
 struct SettingsView: View {
     @Environment(SettingsManager.self) private var settingsManager
-    @Environment(\.dismiss) private var dismiss
+    @Environment(HotkeyManager.self) private var hotkeyManager
+    @Environment(LaunchAtLoginManager.self) private var launchAtLoginManager
     
     @State private var newDomain: String = ""
     @State private var showingResetConfirmation = false
+    @State private var isRecordingHotkey = false
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("Settings")
-                    .font(.headline)
-                Spacer()
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding()
-            
-            Divider()
-            
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
+                    // General Section
+                    generalSection
+                    
+                    Divider()
+                    
+                    // Hotkey Section
+                    hotkeySection
+                    
+                    Divider()
+                    
                     // Activation Delay Section
                     delaySection
                     
@@ -58,20 +55,104 @@ struct SettingsView: View {
                 Spacer()
                 
                 Button("Done") {
-                    dismiss()
+                    NSApp.keyWindow?.close()
                 }
                 .buttonStyle(.borderedProminent)
             }
             .padding()
         }
-        .frame(width: 350, height: 450)
+        .frame(width: 380, height: 500)
         .alert("Reset Settings?", isPresented: $showingResetConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Reset", role: .destructive) {
                 settingsManager.resetToDefaults()
+                hotkeyManager.resetToDefault()
             }
         } message: {
-            Text("This will restore the default distraction sites and activation delay.")
+            Text("This will restore the default distraction sites, activation delay, and hotkey settings.")
+        }
+    }
+    
+    // MARK: - General Section
+    
+    private var generalSection: some View {
+        @Bindable var launchManager = launchAtLoginManager
+        
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("General")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+            
+            HStack {
+                Toggle("Open at Login", isOn: $launchManager.isEnabled)
+                    .toggleStyle(.switch)
+                
+                Spacer()
+            }
+            
+            if launchAtLoginManager.requiresSystemSettings {
+                HStack(spacing: 4) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.orange)
+                        .font(.caption)
+                    Text("Approval required")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+                    
+                    Button("Open Settings") {
+                        launchAtLoginManager.openSystemSettings()
+                    }
+                    .font(.caption)
+                    .buttonStyle(.link)
+                }
+            } else {
+                Text(launchAtLoginManager.statusMessage)
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+    }
+    
+    // MARK: - Hotkey Section
+    
+    private var hotkeySection: some View {
+        @Bindable var hotkey = hotkeyManager
+        
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("Keyboard Shortcut")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+            
+            Text("Toggle grayscale instantly with a keyboard shortcut")
+                .font(.caption)
+                .foregroundColor(.secondary)
+            
+            HStack {
+                Toggle("Enable Hotkey", isOn: $hotkey.isHotkeyEnabled)
+                    .toggleStyle(.switch)
+                
+                Spacer()
+            }
+            
+            if hotkeyManager.isHotkeyEnabled {
+                HStack {
+                    Text("Shortcut:")
+                        .foregroundColor(.secondary)
+                    
+                    HotkeyRecorderButton(
+                        shortcut: $hotkey.currentShortcut,
+                        isRecording: $isRecordingHotkey
+                    )
+                    
+                    Spacer()
+                    
+                    Button("Reset") {
+                        hotkeyManager.resetToDefault()
+                    }
+                    .font(.caption)
+                    .buttonStyle(.link)
+                }
+            }
         }
     }
     
@@ -181,5 +262,98 @@ struct SettingsView: View {
             settingsManager.addDomain(domain)
         }
         newDomain = ""
+    }
+}
+
+// MARK: - Hotkey Recorder Button
+
+struct HotkeyRecorderButton: View {
+    @Binding var shortcut: KeyboardShortcut
+    @Binding var isRecording: Bool
+    
+    var body: some View {
+        ZStack {
+            // Hidden key capture view when recording
+            if isRecording {
+                KeyCaptureView { keyCode, modifiers in
+                    // Require at least one modifier for global hotkeys
+                    if modifiers != 0 {
+                        shortcut = KeyboardShortcut(keyCode: keyCode, modifiers: modifiers)
+                        isRecording = false
+                    }
+                }
+                .frame(width: 0, height: 0)
+            }
+            
+            Button {
+                isRecording.toggle()
+            } label: {
+                HStack(spacing: 4) {
+                    if isRecording {
+                        Text("Press keys...")
+                            .foregroundColor(.accentColor)
+                    } else {
+                        Text(shortcut.displayString)
+                            .fontWeight(.medium)
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(isRecording ? Color.accentColor.opacity(0.2) : Color.secondary.opacity(0.1))
+                .cornerRadius(6)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 6)
+                        .stroke(isRecording ? Color.accentColor : Color.clear, lineWidth: 2)
+                )
+            }
+            .buttonStyle(.plain)
+        }
+    }
+}
+
+// MARK: - Key Capture View (NSViewRepresentable)
+
+struct KeyCaptureView: NSViewRepresentable {
+    let onKeyPress: (UInt32, UInt32) -> Void
+    
+    func makeNSView(context: Context) -> KeyCaptureNSView {
+        let view = KeyCaptureNSView()
+        view.onKeyPress = onKeyPress
+        
+        // Make the view first responder after a short delay
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            view.window?.makeFirstResponder(view)
+        }
+        
+        return view
+    }
+    
+    func updateNSView(_ nsView: KeyCaptureNSView, context: Context) {
+        nsView.onKeyPress = onKeyPress
+    }
+}
+
+class KeyCaptureNSView: NSView {
+    var onKeyPress: ((UInt32, UInt32) -> Void)?
+    
+    override var acceptsFirstResponder: Bool { true }
+    
+    override func keyDown(with event: NSEvent) {
+        let keyCode = UInt32(event.keyCode)
+        let modifiers = carbonModifiers(from: event.modifierFlags)
+        
+        // Only trigger if we have at least one modifier
+        if modifiers != 0 {
+            onKeyPress?(keyCode, modifiers)
+        }
+    }
+    
+    private func carbonModifiers(from flags: NSEvent.ModifierFlags) -> UInt32 {
+        var carbonMods: UInt32 = 0
+        if flags.contains(.command) { carbonMods |= UInt32(cmdKey) }
+        if flags.contains(.option) { carbonMods |= UInt32(optionKey) }
+        if flags.contains(.control) { carbonMods |= UInt32(controlKey) }
+        if flags.contains(.shift) { carbonMods |= UInt32(shiftKey) }
+        return carbonMods
     }
 }
