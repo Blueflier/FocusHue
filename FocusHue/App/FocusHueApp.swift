@@ -36,6 +36,16 @@ struct FocusHueApp: App {
         }
         .windowResizability(.contentSize)
         .defaultPosition(.center)
+        
+        // Settings window (opened from menu bar)
+        Window("FocusHue Settings", id: "settings") {
+            SettingsView()
+                .environment(appState.settingsManager)
+                .environment(appState.hotkeyManager)
+                .environment(appState.launchAtLoginManager)
+        }
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
     }
 
     private var menuBarIcon: String {

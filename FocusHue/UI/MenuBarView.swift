@@ -13,10 +13,7 @@ struct MenuBarView: View {
     @Environment(PermissionManager.self) private var permissionManager
     @Environment(DisplayController.self) private var displayController
     @Environment(AppMonitor.self) private var appMonitor
-    @Environment(HotkeyManager.self) private var hotkeyManager
-    @Environment(LaunchAtLoginManager.self) private var launchAtLoginManager
-    
-    @State private var showingSettings = false
+    @Environment(\.openWindow) private var openWindow
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -131,18 +128,13 @@ struct MenuBarView: View {
             .disabled(!permissionManager.hasAccessibilityPermission)
             
             Button {
-                showingSettings = true
+                openWindow(id: "settings")
+                NSApp.activate(ignoringOtherApps: true)
             } label: {
                 HStack {
                     Image(systemName: "gear")
                     Text("Settings")
                 }
-            }
-            .sheet(isPresented: $showingSettings) {
-                SettingsView()
-                    .environment(settingsManager)
-                    .environment(hotkeyManager)
-                    .environment(launchAtLoginManager)
             }
 
             if !permissionManager.hasAccessibilityPermission {

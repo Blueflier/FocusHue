@@ -12,7 +12,6 @@ struct SettingsView: View {
     @Environment(SettingsManager.self) private var settingsManager
     @Environment(HotkeyManager.self) private var hotkeyManager
     @Environment(LaunchAtLoginManager.self) private var launchAtLoginManager
-    @Environment(\.dismiss) private var dismiss
     
     @State private var newDomain: String = ""
     @State private var showingResetConfirmation = false
@@ -20,23 +19,6 @@ struct SettingsView: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // Header
-            HStack {
-                Text("Settings")
-                    .font(.headline)
-                Spacer()
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
-                }
-                .buttonStyle(.plain)
-            }
-            .padding()
-            
-            Divider()
-            
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
                     // General Section
@@ -72,13 +54,13 @@ struct SettingsView: View {
                 Spacer()
                 
                 Button("Done") {
-                    dismiss()
+                    NSApp.keyWindow?.close()
                 }
                 .buttonStyle(.borderedProminent)
             }
             .padding()
         }
-        .frame(width: 380, height: 550)
+        .frame(width: 380, height: 500)
         .alert("Reset Settings?", isPresented: $showingResetConfirmation) {
             Button("Cancel", role: .cancel) { }
             Button("Reset", role: .destructive) {
