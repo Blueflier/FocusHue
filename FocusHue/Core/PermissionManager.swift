@@ -49,6 +49,12 @@ final class PermissionManager {
         NSWorkspace.shared.open(url)
     }
 
+    /// Open System Settings to the Automation > Privacy pane
+    func openAutomationSettings() {
+        let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Automation")!
+        NSWorkspace.shared.open(url)
+    }
+
     // MARK: - Polling
 
     /// Start polling for permission changes

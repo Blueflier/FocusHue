@@ -195,7 +195,40 @@ struct MenuBarView: View {
                 }
             }
             .font(.caption)
+
+            // Automation permission warning
+            if !appMonitor.hasAutomationPermission {
+                automationWarningSection
+            }
         }
+    }
+
+    // MARK: - Automation Warning Section
+
+    private var automationWarningSection: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundColor(.orange)
+                Text("Chrome Automation Required")
+                    .font(.caption)
+                    .fontWeight(.medium)
+            }
+
+            Text("Grant permission to detect browser URLs")
+                .font(.caption2)
+                .foregroundColor(.secondary)
+
+            Button("Open Automation Settings") {
+                permissionManager.openAutomationSettings()
+            }
+            .font(.caption)
+            .buttonStyle(.borderedProminent)
+            .controlSize(.small)
+        }
+        .padding(8)
+        .background(Color.orange.opacity(0.1))
+        .cornerRadius(6)
     }
 
     private var truncatedURL: String {

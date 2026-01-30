@@ -15,6 +15,8 @@ final class AppMonitor {
     private(set) var currentAppBundleId: String = ""
     private(set) var currentURL: String = ""
     private(set) var isOnDistractingSite: Bool = false
+    private(set) var hasAutomationPermission: Bool = true
+    private(set) var automationErrorMessage: String = ""
 
     private var workspaceObserver: NSObjectProtocol?
     private var urlPollingTimer: Timer?
@@ -141,17 +143,30 @@ final class AppMonitor {
             return
         }
 
-        DispatchQueue.global(qos: .userInitiated).async {
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             var error: NSDictionary?
             let appleScript = NSAppleScript(source: script)
             let result = appleScript?.executeAndReturnError(&error)
 
             if let errorInfo = error {
+                let errorNum = errorInfo[NSAppleScript.errorNumber] as? Int
                 print("AppleScript error: \(errorInfo)")
+
+                DispatchQueue.main.async {
+                    if errorNum == -1743 {
+                        // Not authorized to send Apple events
+                        self?.hasAutomationPermission = false
+                        self?.automationErrorMessage = "Automation permission required for Chrome"
+                    }
+                }
                 completion(nil)
                 return
             }
 
+            DispatchQueue.main.async {
+                self?.hasAutomationPermission = true
+                self?.automationErrorMessage = ""
+            }
             completion(result?.stringValue)
         }
     }
