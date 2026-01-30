@@ -13,12 +13,11 @@ struct FocusHueApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
     @State private var appState = AppState()
-    @State private var isEnabled = true
 
     var body: some Scene {
         // Menu bar icon with rich SwiftUI content
         MenuBarExtra {
-            MenuBarView(isEnabled: $isEnabled)
+            MenuBarView(appState: appState)
                 .environment(appState.settingsManager)
                 .environment(appState.permissionManager)
                 .environment(appState.displayController)
@@ -42,7 +41,7 @@ struct FocusHueApp: App {
             return "eye.circle.fill"
         } else if appState.displayController.isTransitioning {
             return "eye.trianglebadge.exclamationmark"
-        } else if appState.appMonitor.isOnDistractingSite && isEnabled {
+        } else if appState.appMonitor.isOnDistractingSite && appState.isEnabled {
             return "exclamationmark.triangle"
         } else {
             return "eye.circle"
@@ -59,12 +58,60 @@ final class AppState {
     let displayController: DisplayController
     let appMonitor: AppMonitor
     
+    var isEnabled: Bool = true {
+        didSet {
+            if !isEnabled {
+                displayController.reset()
+            }
+        }
+    }
+    
+    private var observationTask: Task<Void, Never>?
+    
     init() {
         // Initialize settings first since other managers depend on it
         self.settingsManager = SettingsManager()
         self.permissionManager = PermissionManager()
         self.displayController = DisplayController(settingsManager: settingsManager)
         self.appMonitor = AppMonitor(settingsManager: settingsManager)
+        
+        // Start observing distraction changes immediately
+        startObserving()
+    }
+    
+    private func startObserving() {
+        // Use a polling approach to watch for changes since we can't use Combine with @Observable
+        observationTask = Task { @MainActor [weak self] in
+            var lastDistractionState = false
+            
+            while !Task.isCancelled {
+                guard let self = self else { break }
+                
+                let currentState = self.appMonitor.isOnDistractingSite
+                
+                // Only react to changes
+                if currentState != lastDistractionState {
+                    lastDistractionState = currentState
+                    self.handleDistractionChange(isDistracted: currentState)
+                }
+                
+                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+            }
+        }
+    }
+    
+    private func handleDistractionChange(isDistracted: Bool) {
+        guard isEnabled && permissionManager.hasAccessibilityPermission else { return }
+        
+        if isDistracted {
+            // Start gradual transition to grayscale
+            if !displayController.isGrayscaleEnabled && !displayController.isTransitioning {
+                displayController.startGradualTransition(toGrayscale: true)
+            }
+        } else {
+            // Cancel transition or disable grayscale
+            displayController.startGradualTransition(toGrayscale: false)
+        }
     }
 }
 

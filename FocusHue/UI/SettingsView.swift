@@ -85,29 +85,21 @@ struct SettingsView: View {
                 .font(.subheadline)
                 .fontWeight(.semibold)
             
-            Text("How long before grayscale activates on distraction sites")
+            Text("Seconds before grayscale activates (1-120)")
                 .font(.caption)
                 .foregroundColor(.secondary)
             
             HStack {
-                Slider(
+                TextField(
+                    "Seconds",
                     value: $settings.activationDelay,
-                    in: SettingsManager.minActivationDelay...SettingsManager.maxActivationDelay,
-                    step: 1
+                    format: .number
                 )
+                .textFieldStyle(.roundedBorder)
+                .frame(width: 80)
+                .multilineTextAlignment(.center)
                 
-                Text("\(Int(settingsManager.activationDelay))s")
-                    .font(.system(.body, design: .monospaced))
-                    .frame(width: 40, alignment: .trailing)
-            }
-            
-            HStack {
-                Text("1s")
-                    .font(.caption2)
-                    .foregroundColor(.secondary)
-                Spacer()
-                Text("120s")
-                    .font(.caption2)
+                Text("seconds")
                     .foregroundColor(.secondary)
             }
         }
