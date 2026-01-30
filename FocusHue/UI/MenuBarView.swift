@@ -8,10 +8,13 @@
 import SwiftUI
 
 struct MenuBarView: View {
-    @Binding var isEnabled: Bool
+    @Bindable var appState: AppState
+    @Environment(SettingsManager.self) private var settingsManager
     @Environment(PermissionManager.self) private var permissionManager
     @Environment(DisplayController.self) private var displayController
     @Environment(AppMonitor.self) private var appMonitor
+    
+    @State private var showingSettings = false
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -45,30 +48,6 @@ struct MenuBarView: View {
         }
         .padding(12)
         .frame(width: 280)
-        .onChange(of: appMonitor.isOnDistractingSite) { _, isDistracted in
-            handleDistractionChange(isDistracted: isDistracted)
-        }
-        .onChange(of: isEnabled) { _, enabled in
-            if !enabled {
-                displayController.reset()
-            }
-        }
-    }
-
-    // MARK: - Distraction Handling
-
-    private func handleDistractionChange(isDistracted: Bool) {
-        guard isEnabled && permissionManager.hasAccessibilityPermission else { return }
-
-        if isDistracted {
-            // Start gradual transition to grayscale
-            if !displayController.isGrayscaleEnabled && !displayController.isTransitioning {
-                displayController.startGradualTransition(toGrayscale: true)
-            }
-        } else {
-            // Cancel transition or disable grayscale
-            displayController.startGradualTransition(toGrayscale: false)
-        }
     }
 
     // MARK: - Status Section
@@ -92,7 +71,7 @@ struct MenuBarView: View {
     }
 
     private var statusText: String {
-        if !isEnabled {
+        if !appState.isEnabled {
             return "Disabled"
         } else if displayController.isGrayscaleEnabled {
             return "Grayscale Active"
@@ -106,7 +85,7 @@ struct MenuBarView: View {
     }
 
     private var statusColor: Color {
-        if !isEnabled {
+        if !appState.isEnabled {
             return .gray
         } else if displayController.isGrayscaleEnabled {
             return .purple
@@ -133,7 +112,7 @@ struct MenuBarView: View {
     }
 
     private var remainingSeconds: Int {
-        let remaining = (1.0 - displayController.transitionProgress) * 15.0
+        let remaining = (1.0 - displayController.transitionProgress) * settingsManager.activationDelay
         return max(0, Int(remaining.rounded()))
     }
 
@@ -141,13 +120,26 @@ struct MenuBarView: View {
 
     private var controlsSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Toggle("Enable Monitoring", isOn: $isEnabled)
+            Toggle("Enable Monitoring", isOn: $appState.isEnabled)
                 .toggleStyle(.switch)
 
             Button("Test Grayscale (5s)") {
                 displayController.testGrayscale(duration: 5.0)
             }
             .disabled(!permissionManager.hasAccessibilityPermission)
+            
+            Button {
+                showingSettings = true
+            } label: {
+                HStack {
+                    Image(systemName: "gear")
+                    Text("Settings")
+                }
+            }
+            .sheet(isPresented: $showingSettings) {
+                SettingsView()
+                    .environment(settingsManager)
+            }
 
             if !permissionManager.hasAccessibilityPermission {
                 Button("Grant Accessibility Permission") {

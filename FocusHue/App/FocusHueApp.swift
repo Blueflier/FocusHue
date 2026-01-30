@@ -12,18 +12,16 @@ import Combine
 struct FocusHueApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-    @State private var permissionManager = PermissionManager()
-    @State private var displayController = DisplayController()
-    @State private var appMonitor = AppMonitor()
-    @State private var isEnabled = true
+    @State private var appState = AppState()
 
     var body: some Scene {
         // Menu bar icon with rich SwiftUI content
         MenuBarExtra {
-            MenuBarView(isEnabled: $isEnabled)
-                .environment(permissionManager)
-                .environment(displayController)
-                .environment(appMonitor)
+            MenuBarView(appState: appState)
+                .environment(appState.settingsManager)
+                .environment(appState.permissionManager)
+                .environment(appState.displayController)
+                .environment(appState.appMonitor)
         } label: {
             Image(systemName: menuBarIcon)
         }
@@ -32,21 +30,87 @@ struct FocusHueApp: App {
         // Onboarding window (shows on first launch)
         Window("Welcome to FocusHue", id: "onboarding") {
             OnboardingView()
-                .environment(permissionManager)
+                .environment(appState.permissionManager)
         }
         .windowResizability(.contentSize)
         .defaultPosition(.center)
     }
 
     private var menuBarIcon: String {
-        if displayController.isGrayscaleEnabled {
+        if appState.displayController.isGrayscaleEnabled {
             return "eye.circle.fill"
-        } else if displayController.isTransitioning {
+        } else if appState.displayController.isTransitioning {
             return "eye.trianglebadge.exclamationmark"
-        } else if appMonitor.isOnDistractingSite && isEnabled {
+        } else if appState.appMonitor.isOnDistractingSite && appState.isEnabled {
             return "exclamationmark.triangle"
         } else {
             return "eye.circle"
+        }
+    }
+}
+
+// MARK: - App State Container
+/// Holds all app state objects with proper initialization order
+@Observable
+final class AppState {
+    let settingsManager: SettingsManager
+    let permissionManager: PermissionManager
+    let displayController: DisplayController
+    let appMonitor: AppMonitor
+    
+    var isEnabled: Bool = true {
+        didSet {
+            if !isEnabled {
+                displayController.reset()
+            }
+        }
+    }
+    
+    private var observationTask: Task<Void, Never>?
+    
+    init() {
+        // Initialize settings first since other managers depend on it
+        self.settingsManager = SettingsManager()
+        self.permissionManager = PermissionManager()
+        self.displayController = DisplayController(settingsManager: settingsManager)
+        self.appMonitor = AppMonitor(settingsManager: settingsManager)
+        
+        // Start observing distraction changes immediately
+        startObserving()
+    }
+    
+    private func startObserving() {
+        // Use a polling approach to watch for changes since we can't use Combine with @Observable
+        observationTask = Task { @MainActor [weak self] in
+            var lastDistractionState = false
+            
+            while !Task.isCancelled {
+                guard let self = self else { break }
+                
+                let currentState = self.appMonitor.isOnDistractingSite
+                
+                // Only react to changes
+                if currentState != lastDistractionState {
+                    lastDistractionState = currentState
+                    self.handleDistractionChange(isDistracted: currentState)
+                }
+                
+                try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
+            }
+        }
+    }
+    
+    private func handleDistractionChange(isDistracted: Bool) {
+        guard isEnabled && permissionManager.hasAccessibilityPermission else { return }
+        
+        if isDistracted {
+            // Start gradual transition to grayscale
+            if !displayController.isGrayscaleEnabled && !displayController.isTransitioning {
+                displayController.startGradualTransition(toGrayscale: true)
+            }
+        } else {
+            // Cancel transition or disable grayscale
+            displayController.startGradualTransition(toGrayscale: false)
         }
     }
 }

@@ -16,13 +16,21 @@ final class DisplayController {
 
     private var transitionTimer: Timer?
     private var testTimer: Timer?
-    private let transitionDuration: TimeInterval = 15.0
     private let timerInterval: TimeInterval = 0.1
+    
+    // Reference to settings manager for configurable delay
+    private let settingsManager: SettingsManager
+    
+    // Computed property to get current transition duration from settings
+    private var transitionDuration: TimeInterval {
+        settingsManager.activationDelay
+    }
 
     // Filter constants from MediaAccessibility (defined in Bridge.h)
     // SYSTEM_FILTER = 0x1, GRAYSCALE_TYPE = 0x1, UNIVERSALACCESSD_MAGIC = 0x8
 
-    init() {
+    init(settingsManager: SettingsManager) {
+        self.settingsManager = settingsManager
         // Check initial grayscale state
         isGrayscaleEnabled = grayscaleEnabled()
     }

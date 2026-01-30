@@ -21,16 +21,9 @@ final class AppMonitor {
     private var workspaceObserver: NSObjectProtocol?
     private var urlPollingTimer: Timer?
     private let urlPollingInterval: TimeInterval = 0.5
-
-    // Distracting domains to monitor
-    private let distractingDomains = [
-        "twitter.com",
-        "x.com",
-        "www.twitter.com",
-        "www.x.com",
-        "mobile.twitter.com",
-        "mobile.x.com"
-    ]
+    
+    // Reference to settings manager for configurable domains
+    private let settingsManager: SettingsManager
 
     // Browser bundle IDs to monitor
     private let browserBundleIds = [
@@ -40,7 +33,8 @@ final class AppMonitor {
         "org.chromium.Chromium"
     ]
 
-    init() {
+    init(settingsManager: SettingsManager) {
+        self.settingsManager = settingsManager
         setupWorkspaceObserver()
         updateCurrentApp()
     }
@@ -179,13 +173,7 @@ final class AppMonitor {
             return
         }
 
-        // Extract domain from URL
-        if let url = URL(string: currentURL), let host = url.host {
-            isOnDistractingSite = distractingDomains.contains { domain in
-                host == domain || host.hasSuffix("." + domain)
-            }
-        } else {
-            isOnDistractingSite = false
-        }
+        // Use settings manager to check if URL is distracting
+        isOnDistractingSite = settingsManager.isDistractingURL(currentURL)
     }
 }
