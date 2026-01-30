@@ -21,14 +21,17 @@ struct OnboardingView: View {
                 welcomeStep
                     .tag(0)
 
-                permissionStep
+                accessibilityPermissionStep
                     .tag(1)
 
-                completionStep
+                automationPermissionStep
                     .tag(2)
+
+                completionStep
+                    .tag(3)
             }
             .tabViewStyle(.automatic)
-            .frame(height: 300)
+            .frame(height: 320)
 
             Divider()
 
@@ -44,8 +47,8 @@ struct OnboardingView: View {
 
                 Spacer()
 
-                if currentStep < 2 {
-                    Button("Next") {
+                if currentStep < 3 {
+                    Button(currentStep == 2 ? "Skip" : "Next") {
                         withAnimation {
                             currentStep += 1
                         }
@@ -62,7 +65,7 @@ struct OnboardingView: View {
             }
             .padding()
         }
-        .frame(width: 450, height: 380)
+        .frame(width: 450, height: 420)
     }
 
     // MARK: - Step Views
@@ -85,7 +88,7 @@ struct OnboardingView: View {
         .padding()
     }
 
-    private var permissionStep: some View {
+    private var accessibilityPermissionStep: some View {
         VStack(spacing: 20) {
             Image(systemName: "hand.raised.circle.fill")
                 .font(.system(size: 64))
@@ -125,6 +128,92 @@ struct OnboardingView: View {
         .padding()
     }
 
+    private var automationPermissionStep: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "gearshape.2.fill")
+                .font(.system(size: 64))
+                .foregroundStyle(permissionManager.hasAnyBrowserAutomationPermission ? .green : .orange)
+
+            Text("Browser Automation")
+                .font(.title)
+                .fontWeight(.bold)
+
+            Text("FocusHue needs Automation permission to detect which website you're viewing in your browser.")
+                .multilineTextAlignment(.center)
+                .foregroundColor(.secondary)
+                .padding(.horizontal, 40)
+
+            VStack(spacing: 12) {
+                // Chrome permission
+                browserPermissionRow(
+                    name: "Google Chrome",
+                    icon: "globe",
+                    status: permissionManager.chromeAutomationStatus,
+                    onRequest: { permissionManager.requestChromeAutomationPermission() }
+                )
+                
+                // Brave permission
+                browserPermissionRow(
+                    name: "Brave Browser",
+                    icon: "shield.fill",
+                    status: permissionManager.braveAutomationStatus,
+                    onRequest: { permissionManager.requestBraveAutomationPermission() }
+                )
+            }
+            .padding(.horizontal, 40)
+
+            if permissionManager.hasBrowserAutomationDenied {
+                Button("Open Automation Settings") {
+                    permissionManager.openAutomationSettings()
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                
+                Text("If denied, enable FocusHue in System Settings")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
+            }
+        }
+        .padding()
+    }
+
+    @ViewBuilder
+    private func browserPermissionRow(name: String, icon: String, status: AutomationPermissionStatus, onRequest: @escaping () -> Void) -> some View {
+        HStack {
+            Image(systemName: icon)
+                .frame(width: 24)
+                .foregroundColor(.purple)
+            
+            Text(name)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            switch status {
+            case .granted:
+                Label("Granted", systemImage: "checkmark.circle.fill")
+                    .foregroundColor(.green)
+                    .font(.caption)
+            case .denied:
+                Label("Denied", systemImage: "xmark.circle.fill")
+                    .foregroundColor(.red)
+                    .font(.caption)
+            case .notDetermined, .targetNotRunning:
+                Button("Request") {
+                    onRequest()
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.small)
+            case .unknown:
+                Text("Unknown")
+                    .foregroundColor(.secondary)
+                    .font(.caption)
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 12)
+        .background(Color.secondary.opacity(0.1))
+        .cornerRadius(8)
+    }
+
     private var completionStep: some View {
         VStack(spacing: 20) {
             Image(systemName: "checkmark.circle.fill")
@@ -141,6 +230,14 @@ struct OnboardingView: View {
                 featureRow(icon: "slider.horizontal.3", text: "Use the menu to test or disable monitoring")
             }
             .padding(.horizontal, 40)
+            
+            if !permissionManager.hasAnyBrowserAutomationPermission {
+                Text("⚠️ No browser permissions granted. URL detection won't work until you grant permission.")
+                    .font(.caption)
+                    .foregroundColor(.orange)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 40)
+            }
         }
         .padding()
     }

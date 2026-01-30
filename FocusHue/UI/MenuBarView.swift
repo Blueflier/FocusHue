@@ -197,7 +197,7 @@ struct MenuBarView: View {
             .font(.caption)
 
             // Automation permission warning
-            if !appMonitor.hasAutomationPermission {
+            if !appMonitor.hasAutomationPermission || !permissionManager.hasAnyBrowserAutomationPermission {
                 automationWarningSection
             }
         }
@@ -210,7 +210,7 @@ struct MenuBarView: View {
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundColor(.orange)
-                Text("Chrome Automation Required")
+                Text("Browser Automation Required")
                     .font(.caption)
                     .fontWeight(.medium)
             }
@@ -219,12 +219,23 @@ struct MenuBarView: View {
                 .font(.caption2)
                 .foregroundColor(.secondary)
 
-            Button("Open Automation Settings") {
-                permissionManager.openAutomationSettings()
+            HStack(spacing: 8) {
+                if permissionManager.hasBrowserAutomationDenied {
+                    Button("Open Settings") {
+                        permissionManager.openAutomationSettings()
+                    }
+                    .font(.caption)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                } else {
+                    Button("Grant for Chrome") {
+                        permissionManager.requestChromeAutomationPermission()
+                    }
+                    .font(.caption)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                }
             }
-            .font(.caption)
-            .buttonStyle(.borderedProminent)
-            .controlSize(.small)
         }
         .padding(8)
         .background(Color.orange.opacity(0.1))
