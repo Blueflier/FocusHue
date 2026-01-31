@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v4
 
       # 1. SETUP CERTIFICATES
-    - name: Install Apple Certificate
+      - name: Install Apple Certificate
         env:
           CERT_BASE64: ${{ secrets.MACOS_CERTIFICATE }}
           CERT_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
@@ -21,11 +21,10 @@ jobs:
           printf '%s' "$CERT_BASE64" | base64 --decode > certificate.p12
           security create-keychain -p "" build.keychain
           security import certificate.p12 -k build.keychain -P "$CERT_PWD" -T /usr/bin/codesign
-          
-          # THESE LINES ARE THE KEY:
           security list-keychain -d user -s build.keychain
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
           security unlock-keychain -p "" build.keychain
+
       # 2. BUILD THE APP
       - name: Build and Archive
         run: |
@@ -44,7 +43,16 @@ jobs:
           APPLE_PWD: ${{ secrets.APPLE_PASSWORD }}
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
+          # Export the app from the archive first
+          xcodebuild -exportArchive \
+            -archivePath FocusHue.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath ./output
+
+          # Create DMG from the exported App
           hdiutil create -volname "FocusHue" -srcfolder ./output/FocusHue.app -ov -format UDZO FocusHue.dmg
+          
+          # Notarize
           xcrun notarytool submit FocusHue.dmg --apple-id "$APPLE_ID" --password "$APPLE_PWD" --team-id "$TEAM_ID" --wait
           xcrun stapler staple FocusHue.dmg
 
@@ -73,7 +81,7 @@ jobs:
           file-path: Casks/focushue.rb
           commit-msg: "Update FocusHue to ${{ github.ref_name }}"
           github-token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-          repository: josephhartono/homebrew-tap # Make sure this matches your tap name!
+          repository: josephhartono/homebrew-tap
           branch: main
           replacement-patterns: |
             /version ".+"/version "${{ github.ref_name }}"/
