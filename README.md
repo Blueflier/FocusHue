@@ -20,7 +20,7 @@ Traditional productivity tools often fail because they treat focus like a physic
 ### Option 2: The Terminal Way (Homebrew)
 
 ```bash
-brew tap yourusername/tap
+brew tap Blueflier/tap
 brew install --cask focushue
 
 ```
