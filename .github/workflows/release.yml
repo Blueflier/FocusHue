@@ -13,7 +13,7 @@ jobs:
         uses: actions/checkout@v4
 
       # 1. SETUP CERTIFICATES
-- name: Install Apple Certificate
+    - name: Install Apple Certificate
         env:
           CERT_BASE64: ${{ secrets.MACOS_CERTIFICATE }}
           CERT_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
