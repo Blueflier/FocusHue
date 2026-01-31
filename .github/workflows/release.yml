@@ -18,11 +18,11 @@ jobs:
           CERT_BASE64: ${{ secrets.MACOS_CERTIFICATE }}
           CERT_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
         run: |
-          echo $CERT_BASE64 | base64 --decode > certificate.p12
+          # Use printf to avoid adding unexpected newlines
+          printf '%s' "$CERT_BASE64" | base64 --decode > certificate.p12
           security create-keychain -p "" build.keychain
           security import certificate.p12 -k build.keychain -P "$CERT_PWD" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
-
       # 2. BUILD THE APP
       - name: Build and Archive
         run: |
