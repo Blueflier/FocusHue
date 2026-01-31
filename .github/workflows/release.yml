@@ -1,0 +1,73 @@
+name: Build and Release FocusHue
+
+on:
+  push:
+    tags:
+      - 'v*' # Triggers whenever you push a tag like v1.0.0
+
+jobs:
+  release:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 1. SETUP CERTIFICATES
+      - name: Install Apple Certificate
+        env:
+          CERT_BASE64: ${{ secrets.MACOS_CERTIFICATE }}
+          CERT_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
+        run: |
+          echo $CERT_BASE64 | base64 --decode > certificate.p12
+          security create-keychain -p "" build.keychain
+          security import certificate.p12 -k build.keychain -P "$CERT_PWD" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
+
+      # 2. BUILD THE APP
+      - name: Build and Archive
+        run: |
+          xcodebuild archive -scheme FocusHue -archivePath FocusHue.xcarchive
+          # Note: You'll need an ExportOptions.plist in your repo root!
+          xcodebuild -exportArchive -archivePath FocusHue.xcarchive -exportOptionsPlist ExportOptions.plist -exportPath ./output
+
+      # 3. PACKAGE & NOTARIZE
+      - name: Create and Notarize DMG
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PWD: ${{ secrets.APPLE_PASSWORD }}
+          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          hdiutil create -volname "FocusHue" -srcfolder ./output/FocusHue.app -ov -format UDZO FocusHue.dmg
+          xcrun notarytool submit FocusHue.dmg --apple-id "$APPLE_ID" --password "$APPLE_PWD" --team-id "$TEAM_ID" --wait
+          xcrun stapler staple FocusHue.dmg
+
+      # 4. CREATE GITHUB RELEASE
+      - name: Upload to GitHub Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: FocusHue.dmg
+          generate_release_notes: true
+
+  # 5. UPDATE HOMEBREW TAP
+  update-hometap:
+    needs: release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Calculate SHA256
+        id: shasum
+        run: |
+          curl -L -o FocusHue.dmg https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/FocusHue.dmg
+          echo "sha=$(sha256sum FocusHue.dmg | awk '{print $1}')" >> $GITHUB_OUTPUT
+
+      - name: Update Homebrew Cask
+        uses: test-room-7/action-update-file@v1
+        with:
+          file-path: Casks/focushue.rb
+          commit-msg: "Update FocusHue to ${{ github.ref_name }}"
+          github-token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          repository: josephhartono/homebrew-tap # Make sure this matches your tap name!
+          branch: main
+          replacement-patterns: |
+            /version ".+"/version "${{ github.ref_name }}"/
+            /sha256 ".+"/sha256 "${{ steps.shasum.outputs.sha }}"/
