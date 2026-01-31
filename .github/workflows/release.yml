@@ -26,9 +26,13 @@ jobs:
       # 2. BUILD THE APP
       - name: Build and Archive
         run: |
-          xcodebuild archive -scheme FocusHue -archivePath FocusHue.xcarchive
-          # Note: You'll need an ExportOptions.plist in your repo root!
-          xcodebuild -exportArchive -archivePath FocusHue.xcarchive -exportOptionsPlist ExportOptions.plist -exportPath ./output
+          xcodebuild archive \
+            -scheme FocusHue \
+            -archivePath FocusHue.xcarchive \
+            -destination "platform=macOS" \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM=${{ secrets.APPLE_TEAM_ID }} \
+            CODE_SIGN_IDENTITY="Developer ID Application"
 
       # 3. PACKAGE & NOTARIZE
       - name: Create and Notarize DMG
