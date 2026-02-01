@@ -83,7 +83,7 @@ jobs:
           file-path: Casks/focushue.rb
           commit-msg: "Update FocusHue to ${{ github.ref_name }}"
           github-token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-          repository: josephhartono/homebrew-tap
+          repository: Blueflier/homebrew-tap
           branch: main
           replacement-patterns: |
             /version ".+"/version "${{ github.ref_name }}"/
