@@ -17,14 +17,22 @@ final class SettingsManager {
         "www.twitter.com",
         "www.x.com",
         "mobile.twitter.com",
-        "mobile.x.com"
+        "mobile.x.com",
+        "youtube.com",
+        "www.youtube.com",
+        "m.youtube.com",
+        "instagram.com",
+        "www.instagram.com",
+        "facebook.com",
+        "www.facebook.com",
+        "m.facebook.com"
     ]
-    
-    // Default activation delay in seconds
-    static let defaultActivationDelay: Double = 15.0
-    
+
+    // Default activation delay in seconds (0 = instant)
+    static let defaultActivationDelay: Double = 0.0
+
     // Minimum and maximum delay values
-    static let minActivationDelay: Double = 1.0
+    static let minActivationDelay: Double = 0.0
     static let maxActivationDelay: Double = 120.0
     
     // MARK: - Stored Properties

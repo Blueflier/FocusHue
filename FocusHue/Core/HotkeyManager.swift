@@ -30,9 +30,9 @@ struct KeyboardShortcut: Codable, Equatable {
         return parts.joined()
     }
     
-    /// Default shortcut: ⌘⇧G (Command + Shift + G)
+    /// Default shortcut: ⌘⇧U (Command + Shift + U)
     static let defaultShortcut = KeyboardShortcut(
-        keyCode: UInt32(kVK_ANSI_G),
+        keyCode: UInt32(kVK_ANSI_U),
         modifiers: UInt32(cmdKey | shiftKey)
     )
 }
