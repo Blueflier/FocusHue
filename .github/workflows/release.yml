@@ -8,6 +8,8 @@ on:
 jobs:
   release:
     runs-on: macos-latest
+    permissions:
+      contents: write  # This is the specific line you need
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
