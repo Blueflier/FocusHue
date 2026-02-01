@@ -53,7 +53,7 @@ jobs:
           hdiutil create -volname "FocusHue" -srcfolder ./output/FocusHue.app -ov -format UDZO FocusHue.dmg
           
           # Notarize
-          xcrun notarytool submit FocusHue.dmg --apple-id "$APPLE_ID" --password "$APPLE_PWD" --team-id "$TEAM_ID" --wait
+          xcrun notarytool submit FocusHue.dmg --verbose --apple-id "$APPLE_ID" --password "$APPLE_PWD" --team-id "$TEAM_ID" --wait
           xcrun stapler staple FocusHue.dmg
 
       # 4. CREATE GITHUB RELEASE
