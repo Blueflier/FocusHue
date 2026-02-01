@@ -126,6 +126,11 @@ struct MenuBarView: View {
                 displayController.testGrayscale(duration: 5.0)
             }
             .disabled(!permissionManager.hasAccessibilityPermission)
+
+            Button("Test URL Grab") {
+                appMonitor.testURLGrabbing()
+            }
+            .disabled(!permissionManager.hasAnyBrowserAutomationPermission)
             
             Button {
                 openWindow(id: "settings")

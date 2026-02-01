@@ -8,12 +8,14 @@ on:
 jobs:
   release:
     runs-on: macos-latest
+    permissions:
+      contents: write  # This is the specific line you need
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
 
       # 1. SETUP CERTIFICATES
-- name: Install Apple Certificate
+      - name: Install Apple Certificate
         env:
           CERT_BASE64: ${{ secrets.MACOS_CERTIFICATE }}
           CERT_PWD: ${{ secrets.MACOS_CERTIFICATE_PWD }}
@@ -21,11 +23,10 @@ jobs:
           printf '%s' "$CERT_BASE64" | base64 --decode > certificate.p12
           security create-keychain -p "" build.keychain
           security import certificate.p12 -k build.keychain -P "$CERT_PWD" -T /usr/bin/codesign
-          
-          # THESE LINES ARE THE KEY:
           security list-keychain -d user -s build.keychain
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "" build.keychain
           security unlock-keychain -p "" build.keychain
+
       # 2. BUILD THE APP
       - name: Build and Archive
         run: |
@@ -44,8 +45,17 @@ jobs:
           APPLE_PWD: ${{ secrets.APPLE_PASSWORD }}
           TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
+          # Export the app from the archive first
+          xcodebuild -exportArchive \
+            -archivePath FocusHue.xcarchive \
+            -exportOptionsPlist ExportOptions.plist \
+            -exportPath ./output
+
+          # Create DMG from the exported App
           hdiutil create -volname "FocusHue" -srcfolder ./output/FocusHue.app -ov -format UDZO FocusHue.dmg
-          xcrun notarytool submit FocusHue.dmg --apple-id "$APPLE_ID" --password "$APPLE_PWD" --team-id "$TEAM_ID" --wait
+          
+          # Notarize
+          xcrun notarytool submit FocusHue.dmg --verbose --apple-id "$APPLE_ID" --password "$APPLE_PWD" --team-id "$TEAM_ID" --wait
           xcrun stapler staple FocusHue.dmg
 
       # 4. CREATE GITHUB RELEASE
@@ -61,20 +71,42 @@ jobs:
     needs: release
     runs-on: ubuntu-latest
     steps:
+      # 1. Calculate SHA (Keep this as you had it)
       - name: Calculate SHA256
         id: shasum
         run: |
+          # Use a small sleep to ensure the release asset is available for download
+          sleep 10
           curl -L -o FocusHue.dmg https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/FocusHue.dmg
           echo "sha=$(sha256sum FocusHue.dmg | awk '{print $1}')" >> $GITHUB_OUTPUT
 
-      - name: Update Homebrew Cask
-        uses: test-room-7/action-update-file@v1
+      # 2. Checkout the ACTUAL Homebrew Tap repo
+      - name: Checkout Tap Repo
+        uses: actions/checkout@v4
         with:
-          file-path: Casks/focushue.rb
-          commit-msg: "Update FocusHue to ${{ github.ref_name }}"
-          github-token: ${{ secrets.HOMEBREW_TAP_TOKEN }}
-          repository: josephhartono/homebrew-tap # Make sure this matches your tap name!
-          branch: main
-          replacement-patterns: |
-            /version ".+"/version "${{ github.ref_name }}"/
-            /sha256 ".+"/sha256 "${{ steps.shasum.outputs.sha }}"/
+          repository: Blueflier/homebrew-tap
+          token: ${{ secrets.HOMEBREW_TAP_TOKEN }} # Needs 'repo' scope
+          path: tap
+
+      # 3. Use 'sed' to update the version and sha256 in the Ruby file
+      - name: Update Cask File
+        run: |
+          VERSION="${{ github.ref_name }}"
+          # Strip 'v' prefix if your tag is 'v1.0.0' but your cask wants '1.0.0'
+          VERSION_CLEAN=$(echo $VERSION | sed 's/^v//')
+          SHA="${{ steps.shasum.outputs.sha }}"
+          
+          sed -i "s/version \".*\"/version \"$VERSION_CLEAN\"/" tap/Casks/focushue.rb
+          sed -i "s/sha256 \".*\"/sha256 \"$SHA\"/" tap/Casks/focushue.rb
+
+      # 4. Commit and Push back to the Tap repo
+      - name: Commit and Push
+        run: |
+          cd tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Casks/focushue.rb
+          git commit -m "Update FocusHue to ${{ github.ref_name }}"
+          
+          # Use the token explicitly in the push command
+          git push https://x-access-token:${{ secrets.HOMEBREW_TAP_TOKEN }}@github.com/Blueflier/homebrew-tap.git main

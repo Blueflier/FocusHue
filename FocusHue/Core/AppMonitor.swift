@@ -85,6 +85,11 @@ final class AppMonitor {
 
     // MARK: - URL Polling
 
+    /// Manually trigger URL fetch for testing
+    func testURLGrabbing() {
+        pollCurrentURL()
+    }
+
     private func startURLPolling() {
         stopURLPolling()
         pollCurrentURL()
