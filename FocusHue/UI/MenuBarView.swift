@@ -48,7 +48,7 @@ struct MenuBarView: View {
     // MARK: - Status Section
 
     private var statusSection: some View {
-        VStack(alignment: .leading, spacing: 4) {
+        VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Circle()
                     .fill(statusColor)
@@ -57,10 +57,78 @@ struct MenuBarView: View {
                     .font(.headline)
             }
 
+            // Accessibility permission warning
             if !permissionManager.hasAccessibilityPermission {
-                Text("Accessibility permission required")
-                    .font(.caption)
-                    .foregroundColor(.orange)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Accessibility permission required")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+
+                    Text("Needed to control screen color filters")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+
+                    HStack(spacing: 8) {
+                        Button("Request Permission") {
+                            permissionManager.requestAccessibilityPermission()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .controlSize(.small)
+
+                        Button("Open Settings") {
+                            permissionManager.openAccessibilitySettings()
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+                }
+                .padding(8)
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(6)
+            }
+
+            // Automation permission warning (only if accessibility is granted)
+            if permissionManager.hasAccessibilityPermission && !permissionManager.hasAnyBrowserAutomationPermission {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Browser automation permission needed")
+                        .font(.caption)
+                        .foregroundColor(.orange)
+
+                    Text("Needed to detect which website you're viewing")
+                        .font(.caption2)
+                        .foregroundColor(.secondary)
+
+                    HStack(spacing: 8) {
+                        // Chrome button
+                        if permissionManager.chromeAutomationStatus != .granted {
+                            Button("Allow Chrome") {
+                                permissionManager.requestChromeAutomationPermission()
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.small)
+                        }
+
+                        // Brave button
+                        if permissionManager.braveAutomationStatus != .granted {
+                            Button("Allow Brave") {
+                                permissionManager.requestBraveAutomationPermission()
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .controlSize(.small)
+                        }
+                    }
+
+                    if permissionManager.hasBrowserAutomationDenied {
+                        Button("Open Automation Settings") {
+                            permissionManager.openAutomationSettings()
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                    }
+                }
+                .padding(8)
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(6)
             }
         }
     }
