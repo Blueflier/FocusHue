@@ -49,6 +49,13 @@ struct FocusHueApp: App {
         }
         .windowResizability(.contentSize)
         .defaultPosition(.center)
+
+        // Usage Report window
+        Window("Usage Report", id: "usage") {
+            UsageView(usageTracker: appState.usageTracker)
+        }
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
     }
 
     private var menuBarIcon: String {
@@ -74,6 +81,7 @@ final class AppState {
     let appMonitor: AppMonitor
     let hotkeyManager: HotkeyManager
     let launchAtLoginManager: LaunchAtLoginManager
+    let usageTracker: UsageTracker
     
     var isEnabled: Bool = true {
         didSet {
@@ -93,6 +101,7 @@ final class AppState {
         self.appMonitor = AppMonitor(settingsManager: settingsManager)
         self.hotkeyManager = HotkeyManager()
         self.launchAtLoginManager = LaunchAtLoginManager()
+        self.usageTracker = UsageTracker(settingsManager: settingsManager)
         
         // Setup hotkey callback to toggle grayscale
         setupHotkeyCallback()
@@ -118,18 +127,43 @@ final class AppState {
         // Use a polling approach to watch for changes since we can't use Combine with @Observable
         observationTask = Task { @MainActor [weak self] in
             var lastDistractionState = false
-            
+            var lastApp = ""
+            var lastURL = ""
+            var lastAnalyticsEnabled = false
+
             while !Task.isCancelled {
                 guard let self = self else { break }
-                
+
                 let currentState = self.appMonitor.isOnDistractingSite
-                
+
                 // Only react to changes
                 if currentState != lastDistractionState {
                     lastDistractionState = currentState
                     self.handleDistractionChange(isDistracted: currentState)
                 }
-                
+
+                // Track app/URL changes for analytics
+                let currentApp = self.appMonitor.currentAppName
+                let currentURL = self.appMonitor.currentURL
+                let analyticsEnabled = self.settingsManager.isAnalyticsEnabled
+
+                // If analytics was just toggled off, end current session
+                if lastAnalyticsEnabled && !analyticsEnabled {
+                    self.usageTracker.endCurrentSession()
+                }
+                lastAnalyticsEnabled = analyticsEnabled
+
+                if currentApp != lastApp || currentURL != lastURL {
+                    lastApp = currentApp
+                    lastURL = currentURL
+                    let url: String? = currentURL.isEmpty ? nil : currentURL
+                    self.usageTracker.handleAppChange(
+                        appName: currentApp,
+                        bundleId: self.appMonitor.currentAppBundleId,
+                        url: url
+                    )
+                }
+
                 try? await Task.sleep(nanoseconds: 100_000_000) // 100ms
             }
         }

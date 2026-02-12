@@ -53,11 +53,18 @@ final class SettingsManager {
             saveDelay()
         }
     }
-    
+
+    var isAnalyticsEnabled: Bool {
+        didSet {
+            saveAnalytics()
+        }
+    }
+
     // MARK: - UserDefaults Keys
-    
+
     private let domainsKey = "distractionDomains"
     private let delayKey = "activationDelay"
+    private let analyticsKey = "analyticsEnabled"
     
     // MARK: - Init
     
@@ -76,6 +83,9 @@ final class SettingsManager {
         } else {
             self.activationDelay = Self.defaultActivationDelay
         }
+
+        // Load analytics setting (defaults false / opt-in)
+        self.isAnalyticsEnabled = UserDefaults.standard.bool(forKey: analyticsKey)
     }
     
     // MARK: - Persistence
@@ -86,6 +96,10 @@ final class SettingsManager {
     
     private func saveDelay() {
         UserDefaults.standard.set(activationDelay, forKey: delayKey)
+    }
+
+    private func saveAnalytics() {
+        UserDefaults.standard.set(isAnalyticsEnabled, forKey: analyticsKey)
     }
     
     // MARK: - Domain Management
@@ -111,6 +125,7 @@ final class SettingsManager {
     func resetToDefaults() {
         distractionDomains = Self.defaultDistractionDomains
         activationDelay = Self.defaultActivationDelay
+        isAnalyticsEnabled = false
     }
     
     /// Check if a URL matches any distraction domain

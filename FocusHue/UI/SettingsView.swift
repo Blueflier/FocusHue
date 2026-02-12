@@ -19,9 +19,12 @@ struct SettingsView: View {
 
     @Bindable var appState: AppState
 
+    @Environment(\.openWindow) private var openWindow
+
     @State private var newDomain: String = ""
     @State private var showingResetConfirmation = false
     @State private var isRecordingHotkey = false
+    @State private var showingDeleteDataConfirmation = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -44,6 +47,11 @@ struct SettingsView: View {
 
                     // Distraction Domains Section
                     domainsSection
+
+                    Divider()
+
+                    // Analytics Section
+                    analyticsSection
 
                     Divider()
 
@@ -287,6 +295,68 @@ struct SettingsView: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - Analytics Section
+
+    private var analyticsSection: some View {
+        @Bindable var settings = settingsManager
+
+        return VStack(alignment: .leading, spacing: 8) {
+            Text("Usage Analytics")
+                .font(.subheadline)
+                .fontWeight(.semibold)
+
+            Text("Track time spent per app and website")
+                .font(.caption)
+                .foregroundColor(.secondary)
+
+            Picker("", selection: $settings.isAnalyticsEnabled) {
+                Text("Off").tag(false)
+                Text("On").tag(true)
+            }
+            .pickerStyle(.segmented)
+
+            if settingsManager.isAnalyticsEnabled {
+                HStack {
+                    Button("View Usage Report") {
+                        openWindow(id: "usage")
+                    }
+
+                    Button("View Raw Data") {
+                        appState.usageTracker.openRawDataFile()
+                    }
+
+                    Spacer()
+                }
+
+                HStack {
+                    Text("Storage:")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    Text(appState.usageTracker.calculateStorageSize())
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+
+                    Spacer()
+
+                    Button("Delete All Data") {
+                        showingDeleteDataConfirmation = true
+                    }
+                    .font(.caption)
+                    .foregroundColor(.red)
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .alert("Delete All Analytics Data?", isPresented: $showingDeleteDataConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                appState.usageTracker.deleteAllData()
+            }
+        } message: {
+            Text("This will permanently remove all recorded usage data. This cannot be undone.")
         }
     }
 
