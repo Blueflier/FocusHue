@@ -39,10 +39,13 @@ struct FocusHueApp: App {
         
         // Settings window (opened from menu bar)
         Window("FocusHue Settings", id: "settings") {
-            SettingsView()
+            SettingsView(appState: appState)
                 .environment(appState.settingsManager)
                 .environment(appState.hotkeyManager)
                 .environment(appState.launchAtLoginManager)
+                .environment(appState.displayController)
+                .environment(appState.appMonitor)
+                .environment(appState.permissionManager)
         }
         .windowResizability(.contentSize)
         .defaultPosition(.center)
