@@ -12,6 +12,7 @@ struct MenuBarView: View {
     @Environment(DisplayController.self) private var displayController
     @Environment(AppMonitor.self) private var appMonitor
     @Environment(PermissionManager.self) private var permissionManager
+    @Environment(SettingsManager.self) private var settingsManager
     @Environment(\.openWindow) private var openWindow
 
     var body: some View {
@@ -136,6 +137,8 @@ struct MenuBarView: View {
     private var statusText: String {
         if !appState.isEnabled {
             return "Disabled"
+        } else if settingsManager.monitoringMode == .normal {
+            return "Normal Mode"
         } else if displayController.isGrayscaleEnabled {
             return "Grayscale Active"
         } else if displayController.isTransitioning {
@@ -150,6 +153,8 @@ struct MenuBarView: View {
     private var statusColor: Color {
         if !appState.isEnabled {
             return .gray
+        } else if settingsManager.monitoringMode == .normal {
+            return .blue
         } else if displayController.isGrayscaleEnabled {
             return .purple
         } else if displayController.isTransitioning {

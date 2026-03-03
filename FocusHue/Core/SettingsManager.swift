@@ -8,6 +8,12 @@
 import Foundation
 import SwiftUI
 
+/// App monitoring mode
+enum MonitoringMode: String, Codable {
+    case greyscale      // Grayscale activates on distraction
+    case normal         // Tracks usage but no grayscale
+}
+
 @Observable
 final class SettingsManager {
     // Default distraction domains
@@ -36,10 +42,16 @@ final class SettingsManager {
     static let maxActivationDelay: Double = 120.0
     
     // MARK: - Stored Properties
-    
+
     var distractionDomains: [String] {
         didSet {
             saveDomains()
+        }
+    }
+
+    var distractionApps: [String] {  // Bundle IDs
+        didSet {
+            saveApps()
         }
     }
     
@@ -60,11 +72,26 @@ final class SettingsManager {
         }
     }
 
+    var monitoringMode: MonitoringMode {
+        didSet {
+            saveMonitoringMode()
+        }
+    }
+
+    var localhostDisplayNames: [String: String] {
+        didSet {
+            saveLocalhostDisplayNames()
+        }
+    }
+
     // MARK: - UserDefaults Keys
 
     private let domainsKey = "distractionDomains"
+    private let appsKey = "distractionApps"
     private let delayKey = "activationDelay"
     private let analyticsKey = "analyticsEnabled"
+    private let monitoringModeKey = "monitoringMode"
+    private let localhostDisplayNamesKey = "localhostDisplayNames"
     
     // MARK: - Init
     
@@ -74,6 +101,13 @@ final class SettingsManager {
             self.distractionDomains = savedDomains
         } else {
             self.distractionDomains = Self.defaultDistractionDomains
+        }
+
+        // Load distraction apps from UserDefaults
+        if let savedApps = UserDefaults.standard.stringArray(forKey: appsKey) {
+            self.distractionApps = savedApps
+        } else {
+            self.distractionApps = []
         }
         
         // Load delay from UserDefaults or use default
@@ -86,6 +120,21 @@ final class SettingsManager {
 
         // Load analytics setting (defaults false / opt-in)
         self.isAnalyticsEnabled = UserDefaults.standard.bool(forKey: analyticsKey)
+
+        // Load monitoring mode (defaults to greyscale)
+        if let modeString = UserDefaults.standard.string(forKey: monitoringModeKey),
+           let mode = MonitoringMode(rawValue: modeString) {
+            self.monitoringMode = mode
+        } else {
+            self.monitoringMode = .greyscale
+        }
+
+        // Load localhost display names (defaults to OpenClaw on 18789)
+        if let saved = UserDefaults.standard.dictionary(forKey: localhostDisplayNamesKey) as? [String: String] {
+            self.localhostDisplayNames = saved
+        } else {
+            self.localhostDisplayNames = ["18789": "OpenClaw"]
+        }
     }
     
     // MARK: - Persistence
@@ -93,7 +142,11 @@ final class SettingsManager {
     private func saveDomains() {
         UserDefaults.standard.set(distractionDomains, forKey: domainsKey)
     }
-    
+
+    private func saveApps() {
+        UserDefaults.standard.set(distractionApps, forKey: appsKey)
+    }
+
     private func saveDelay() {
         UserDefaults.standard.set(activationDelay, forKey: delayKey)
     }
@@ -101,7 +154,15 @@ final class SettingsManager {
     private func saveAnalytics() {
         UserDefaults.standard.set(isAnalyticsEnabled, forKey: analyticsKey)
     }
-    
+
+    private func saveMonitoringMode() {
+        UserDefaults.standard.set(monitoringMode.rawValue, forKey: monitoringModeKey)
+    }
+
+    private func saveLocalhostDisplayNames() {
+        UserDefaults.standard.set(localhostDisplayNames, forKey: localhostDisplayNamesKey)
+    }
+
     // MARK: - Domain Management
     
     /// Add a new domain to the distraction list
@@ -120,12 +181,39 @@ final class SettingsManager {
     func removeDomains(at offsets: IndexSet) {
         distractionDomains.remove(atOffsets: offsets)
     }
-    
+
+    /// Add a distraction app by bundle ID
+    func addApp(_ bundleId: String) {
+        let normalized = bundleId.trimmingCharacters(in: .whitespaces)
+        guard !normalized.isEmpty, !distractionApps.contains(normalized) else { return }
+        distractionApps.append(normalized)
+    }
+
+    /// Remove a distraction app
+    func removeApp(_ bundleId: String) {
+        distractionApps.removeAll { $0 == bundleId }
+    }
+
     /// Reset to default domains
     func resetToDefaults() {
         distractionDomains = Self.defaultDistractionDomains
+        distractionApps = []
         activationDelay = Self.defaultActivationDelay
         isAnalyticsEnabled = false
+        monitoringMode = .greyscale
+        localhostDisplayNames = ["18789": "OpenClaw"]
+    }
+
+    // MARK: - Localhost Display Names
+
+    /// Add or update a localhost display name
+    func setLocalhostDisplayName(port: String, name: String) {
+        localhostDisplayNames[port] = name
+    }
+
+    /// Remove a localhost display name
+    func removeLocalhostDisplayName(port: String) {
+        localhostDisplayNames.removeValue(forKey: port)
     }
     
     /// Check if a URL matches any distraction domain

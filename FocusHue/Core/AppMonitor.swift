@@ -173,12 +173,18 @@ final class AppMonitor {
     // MARK: - Distraction Detection
 
     private func updateDistractionStatus() {
+        // Check if current app is a distraction app
+        if settingsManager.distractionApps.contains(currentAppBundleId) {
+            isOnDistractingSite = true
+            return
+        }
+
+        // Check if URL is distracting
         guard !currentURL.isEmpty else {
             isOnDistractingSite = false
             return
         }
 
-        // Use settings manager to check if URL is distracting
         isOnDistractingSite = settingsManager.isDistractingURL(currentURL)
     }
 }

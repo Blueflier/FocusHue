@@ -53,6 +53,7 @@ struct FocusHueApp: App {
         // Usage Report window
         Window("Usage Report", id: "usage") {
             UsageView(usageTracker: appState.usageTracker)
+                .environment(appState.settingsManager)
         }
         .windowResizability(.contentSize)
         .defaultPosition(.center)
@@ -171,7 +172,10 @@ final class AppState {
     
     private func handleDistractionChange(isDistracted: Bool) {
         guard isEnabled && permissionManager.hasAccessibilityPermission else { return }
-        
+
+        // Skip grayscale activation in normal mode
+        guard settingsManager.monitoringMode == .greyscale else { return }
+
         if isDistracted {
             // Start gradual transition to grayscale
             if !displayController.isGrayscaleEnabled && !displayController.isTransitioning {
